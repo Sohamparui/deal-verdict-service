@@ -8,7 +8,7 @@ A production-grade FastAPI microservice that compares e-commerce product offers 
 
 - **Deterministic Offer Filtering**: Filters out-of-stock items and deterministically pinpoints the best available offer by price.
 - **Structured AI Generation**: Uses Google GenAI SDK with JSON schema constraints (`response_schema=AIDealVerdict`) to guarantee strictly typed outputs without brittle prompt parsing.
-- **Model Fallback Resilience**: Implements sequential fallback across Gemini models (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash`) for high availability.
+- **Model Fallback Resilience**: Implements sequential fallback across Gemini models (`gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.5-flash`) for high availability.
 - **Asynchronous & Latency Tracked**: Fully asynchronous execution path with end-to-end request latency captured in milliseconds.
 - **Comprehensive Test Suite**: Automated unit tests with `pytest` and FastAPI's `TestClient`, covering edge cases, validation errors, and mocked external AI calls.
 - **Interactive Documentation**: Built-in OpenAPI Swagger UI (`/docs`) and ReDoc (`/redoc`).

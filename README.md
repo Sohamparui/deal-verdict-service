@@ -1,26 +1,27 @@
-# AI Deal Microservice
+# AI Deal Verdict Microservice
 
-A production-ready FastAPI microservice that compares e-commerce product offers across multiple retailers and generates an AI-powered buying verdict using Google Gemini (`gemini-3.8-flash`).
+A production-grade FastAPI microservice that compares e-commerce product offers across multiple retailers and generates structured, AI-powered buying verdicts using Google Gemini.
 
 ---
 
 ## Features
 
-- **Deterministic Offer Filtering**: Automatically filters out-of-stock listings and detects the lowest price offer.
-- **AI-Powered Deal Analysis**: Uses Google Gemini to generate structured JSON deal verdicts, including a buying score (1–10), punchy headline, pros, and cons.
-- **Strict Pydantic Schemas**: Validates incoming payloads and guarantees structured output schemas.
-- **Async Execution & Latency Tracking**: End-to-end asynchronous requests with execution latency reported in milliseconds.
-- **Interactive Documentation**: Built-in Swagger UI and ReDoc generated automatically by FastAPI.
+- **Deterministic Offer Filtering**: Filters out-of-stock items and deterministically pinpoints the best available offer by price.
+- **Structured AI Generation**: Uses Google GenAI SDK with JSON schema constraints (`response_schema=AIDealVerdict`) to guarantee strictly typed outputs without brittle prompt parsing.
+- **Model Fallback Resilience**: Implements sequential fallback across Gemini models (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash`) for high availability.
+- **Asynchronous & Latency Tracked**: Fully asynchronous execution path with end-to-end request latency captured in milliseconds.
+- **Comprehensive Test Suite**: Automated unit tests with `pytest` and FastAPI's `TestClient`, covering edge cases, validation errors, and mocked external AI calls.
+- **Interactive Documentation**: Built-in OpenAPI Swagger UI (`/docs`) and ReDoc (`/redoc`).
 
 ---
 
 ## Tech Stack
 
 - **Framework**: [FastAPI](https://fastapi.tiangolo.com/)
-- **Server**: [Uvicorn](https://www.uvicorn.org/)
-- **LLM / AI**: [Google GenAI SDK](https://github.com/google-gemini/google-genai) (`gemini-3.8-flash`)
+- **ASGI Server**: [Uvicorn](https://www.uvicorn.org/)
 - **Data Validation**: [Pydantic v2](https://docs.pydantic.dev/)
-- **Configuration**: [python-dotenv](https://github.com/theskumar/python-dotenv)
+- **AI / LLM**: [Google GenAI SDK](https://github.com/google-gemini/google-genai)
+- **Testing**: [pytest](https://docs.pytest.org/) & [httpx](https://www.python-httpx.org/)
 
 ---
 
@@ -30,6 +31,7 @@ A production-ready FastAPI microservice that compares e-commerce product offers 
 fast_api/
 ├── main.py              # FastAPI microservice endpoints and Gemini integration
 ├── schemas.py           # Pydantic data schemas for requests and responses
+├── test_main.py         # Automated unit and integration tests
 ├── requirements.txt     # Python dependencies
 ├── .env.example         # Template for environment variables
 ├── .gitignore           # Git ignore configuration
@@ -45,35 +47,28 @@ fast_api/
 - Python 3.10 or higher
 - A [Google Gemini API Key](https://aistudio.google.com/app/apikey)
 
-### 2. Clone the Repository
-
-```bash
-git clone <your-github-repo-url>
-cd fast_api
-```
-
-### 3. Set Up Virtual Environment
+### 2. Setup Virtual Environment
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-### 4. Install Dependencies
+### 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 5. Configure Environment Variables
+### 4. Configure Environment Variables
 
-Create a `.env` file in the root directory by copying `.env.example`:
+Create a `.env` file from the example template:
 
 ```bash
 cp .env.example .env
 ```
 
-Open `.env` and enter your Gemini API key:
+Add your Gemini API key:
 
 ```env
 GEMINI_API_KEY=your_actual_api_key_here
@@ -83,30 +78,51 @@ GEMINI_API_KEY=your_actual_api_key_here
 
 ## Running the Application
 
-Start the development server with hot-reload enabled:
+Start the local development server:
 
 ```bash
 uvicorn main:app --reload
 ```
 
-The service will be accessible at:
-- **Base URL**: `http://127.0.0.1:8000`
-- **Interactive Swagger Docs**: `http://127.0.0.1:8000/docs`
-- **ReDoc Alternative Docs**: `http://127.0.0.1:8000/redoc`
+- **Interactive API Docs (Swagger UI)**: `http://127.0.0.1:8000/docs`
+- **Health Check**: `http://127.0.0.1:8000/health`
+
+---
+
+## Running Automated Tests
+
+Run the test suite using `pytest`:
+
+```bash
+pytest -v
+```
+
+Tests cover:
+- Health check endpoint verification
+- Deterministic cheapest price selection among in-stock offers
+- Out-of-stock error handling (`400 Bad Request`)
+- Payload schema validation (`422 Unprocessable Entity`)
+- Mocked AI model response parsing and latency recording
 
 ---
 
 ## API Reference
 
-### Analyze Deal
+### Health Check
 
-Compares available store offers and returns the lowest price alongside an AI buying recommendation.
+- **URL**: `/health`
+- **Method**: `GET`
+- **Response**: `{"status": "ok", "service": "deal-analysis-service"}`
+
+---
+
+### Analyze Deal
 
 - **URL**: `/api/v1/analyze-deal`
 - **Method**: `POST`
 - **Content-Type**: `application/json`
 
-#### Request Body Example
+#### Request Body
 
 ```json
 {
@@ -131,7 +147,7 @@ Compares available store offers and returns the lowest price alongside an AI buy
 }
 ```
 
-#### Response Example (`200 OK`)
+#### Response Body (`200 OK`)
 
 ```json
 {
@@ -141,7 +157,7 @@ Compares available store offers and returns the lowest price alongside an AI buy
   "ai_verdict": {
     "buy_score": 8,
     "headline": "Solid Deal on Base Flagship with Good Flipkart Pricing",
-    "pro": [
+    "pros": [
       "Cheapest currently in-stock option across analyzed stores",
       "Noticeable price cut below standard Indian retail MRP"
     ],
@@ -152,25 +168,4 @@ Compares available store offers and returns the lowest price alongside an AI buy
   },
   "latency_ms": 780.45
 }
-```
-
-#### Error Responses
-
-- **`400 Bad Request`**: When all submitted store offers are out of stock.
-- **`502 Bad Gateway`**: When the Gemini API call fails or all fallback models are unreachable.
-- **`422 Unprocessable Entity`**: Request validation error (e.g. empty offers list or missing fields).
-
----
-
-## Pushing to GitHub
-
-To push this repository to GitHub for the first time:
-
-1. Create a new repository on [GitHub](https://github.com/new).
-2. Run the following commands in the project directory:
-
-```bash
-git remote add origin https://github.com/<your-username>/<your-repo-name>.git
-git branch -M main
-git push -u origin main
 ```
